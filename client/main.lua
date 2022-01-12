@@ -13,12 +13,14 @@ local usingSafe = false
 
 function lockpickDone(success)
     local pos = GetEntityCoords(PlayerPedId())
+    -- TODO: Replace QBCore.Functions.IsWearingGloves() with a better function
     if math.random(1, 100) <= 80 and not QBCore.Functions.IsWearingGloves() then
         TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
     end
     if success then
         GrabItem(currentSpot)
     else
+        -- TODO: Replace QBCore.Functions.IsWearingGloves() with a better function
         if math.random(1, 100) <= 40 and QBCore.Functions.IsWearingGloves() then
             TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
             QBCore.Functions.Notify(Lang:t('info.glove_ripped'))
@@ -164,6 +166,7 @@ RegisterNetEvent('thermite:UseThermite', function()
     if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
         if CurrentCops >= Config.MinimumThermitePolice then
             local pos = GetEntityCoords(PlayerPedId())
+            -- TODO: Replace QBCore.Functions.IsWearingGloves() with a better function
             if math.random(1, 100) <= 80 and not QBCore.Functions.IsWearingGloves() then
                 TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
             end
