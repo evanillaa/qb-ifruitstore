@@ -58,22 +58,5 @@ RegisterNetEvent('qb-ifruitstore:server:itemReward', function(spot)
 
     if Player.Functions.AddItem(item.name, item.amount) then
         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[item.name], 'add')
-    else
-        TriggerClientEvent('QBCore:Notify', src, 'You have to much in your pocket ..', 'error')
     end
-end)
-
-RegisterNetEvent('qb-ifruitstore:server:PoliceAlertMessage', function(msg, coords, blip)
-    for k, v in pairs(QBCore.Functions.GetPlayers()) do
-        local Player = QBCore.Functions.GetPlayer(v)
-        if Player ~= nil then
-            if (Player.PlayerData.job.name == "police") then
-                TriggerClientEvent("qb-ifruitstore:client:PoliceAlertMessage", v, msg, coords, blip)
-            end
-        end
-    end
-end)
-
-RegisterNetEvent('qb-ifruitstore:server:callCops', function(streetLabel, coords)
-    TriggerClientEvent("qb-ifruitstore:client:robberyCall", -1, streetLabel, coords)
 end)

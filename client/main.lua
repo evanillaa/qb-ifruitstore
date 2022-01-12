@@ -13,17 +13,18 @@ local usingSafe = false
 
 function lockpickDone(success)
     local pos = GetEntityCoords(PlayerPedId())
-    if math.random(1, 100) <= 80 and not IsWearingHandshoes() then
+    if math.random(1, 100) <= 80 and not QBCore.Functions.IsWearingGloves() then
         TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
     end
     if success then
         GrabItem(currentSpot)
     else
-        if math.random(1, 100) <= 40 and IsWearingHandshoes() then
+        if math.random(1, 100) <= 40 and QBCore.Functions.IsWearingGloves() then
             TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
-            QBCore.Functions.Notify("You ripped your glove..")
+            QBCore.Functions.Notify(Lang:t('info.glove_ripped'))
         end
         if math.random(1, 100) <= 10 then
+            -- TODO: make server side event to remove item
             TriggerServerEvent("QBCore:Server:RemoveItem", "advancedlockpick", 1)
             TriggerEvent('inventory:client:ItemBox', QBCore.Shared.Items["advancedlockpick"], "remove")
         end
@@ -31,12 +32,11 @@ function lockpickDone(success)
 end
 
 function GrabItem(spot)
-    local pos = GetEntityCoords(PlayerPedId())
     if requiredItemsShowed2 then
         requiredItemsShowed2 = false
         TriggerEvent('inventory:client:requiredItems', requiredItems, false)
     end
-    QBCore.Functions.Progressbar("grab_ifruititem", "Disconnect Item", 10000, false, true, {
+    QBCore.Functions.Progressbar("grab_ifruititem", Lang:t('info.grab_item'), 10000, false, true, {
         disableMovement = true,
         disableCarMovement = true,
         disableMouse = false,
@@ -47,28 +47,19 @@ function GrabItem(spot)
         flags = 16,
     }, {}, {}, function() -- Done
         if not copsCalled then
-			local s1, s2 = GetStreetNameAtCoord(pos.x, pos.y, pos.z)
-            local street1 = GetStreetNameFromHashKey(s1)
-            local street2 = GetStreetNameFromHashKey(s2)
-            local streetLabel = street1
-            if street2 ~= nil then
-                streetLabel = streetLabel .. " " .. street2
-            end
-            -- if Config.SmallBanks[closestBank]["alarm"] then
-                TriggerServerEvent("qb-ifruitstore:server:callCops", streetLabel, pos)
-                copsCalled = true
-            -- end
+            TriggerServerEvent('police:server:policeAlert', Lang:t('info.robbery_attempt'))
+            copsCalled = true
         end
 
         StopAnimTask(PlayerPedId(), "anim@gangops@facility@servers@", "hotwire", 1.0)
         TriggerServerEvent('qb-ifruitstore:server:setSpotState', "isDone", true, spot)
         TriggerServerEvent('qb-ifruitstore:server:setSpotState', "isBusy", false, spot)
         TriggerServerEvent('qb-ifruitstore:server:itemReward', spot)
-        TriggerServerEvent('qb-ifruitstore:server:PoliceAlertMessage', 'People try to steal items at the iFruit Store', pos, true)
+        TriggerServerEvent('police:server:policeAlert', Lang:t('info.robbery_attempt2'))
     end, function() -- Cancel
         StopAnimTask(PlayerPedId(), "anim@gangops@facility@servers@", "hotwire", 1.0)
         TriggerServerEvent('qb-ifruitstore:server:setSpotState', "isBusy", false, spot)
-        QBCore.Functions.Notify("Canceled..", "error")
+        QBCore.Functions.Notify(Lang:t('error.canceled'), "error")
     end)
 end
 
@@ -85,22 +76,6 @@ function DrawText3Ds(x, y, z, text)
     local factor = (string.len(text)) / 370
     DrawRect(0.0, 0.0+0.0125, 0.017+ factor, 0.03, 0, 0, 0, 75)
     ClearDrawOrigin()
-end
-
-function IsWearingHandshoes()
-    local armIndex = GetPedDrawableVariation(PlayerPedId(), 3)
-    local model = GetEntityModel(PlayerPedId())
-    local retval = true
-    if model == `mp_m_freemode_01` then
-        if Config.MaleNoHandshoes[armIndex] ~= nil and Config.MaleNoHandshoes[armIndex] then
-            retval = false
-        end
-    else
-        if Config.FemaleNoHandshoes[armIndex] ~= nil and Config.FemaleNoHandshoes[armIndex] then
-            retval = false
-        end
-    end
-    return retval
 end
 
 function takeAnim()
@@ -131,17 +106,19 @@ end)
 RegisterNUICallback('thermitefailed', function()
     PlaySound(-1, "Place_Prop_Fail", "DLC_Dmod_Prop_Editor_Sounds", 0, 0, 1)
     TriggerServerEvent("qb-ifruitstore:server:SetThermiteStatus", "isBusy", false)
+    -- TODO: make server side event to remove item
     TriggerServerEvent("QBCore:Server:RemoveItem", "thermite", 1)
     TriggerEvent('inventory:client:ItemBox', QBCore.Shared.Items["thermite"], "remove")
     local coords = GetEntityCoords(PlayerPedId())
     local randTime = math.random(10000, 15000)
     CreateFire(coords, randTime)
 
-    TriggerServerEvent('qb-ifruitstore:server:PoliceAlertMessage', 'People try to steal items at the iFruit Store', coords, true)
+    TriggerServerEvent('police:server:policeAlert', Lang:t('info.robbery_attempt2'))
 end)
 
 RegisterNUICallback('thermitesuccess', function()
     QBCore.Functions.Notify("The fuses are broken", "success")
+    -- TODO: make server side event to remove item
     TriggerServerEvent("QBCore:Server:RemoveItem", "thermite", 1)
     local pos = GetEntityCoords(PlayerPedId())
     if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
@@ -185,9 +162,9 @@ end)
 RegisterNetEvent('thermite:UseThermite', function()
     local pos = GetEntityCoords(PlayerPedId())
     if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
-        if CurrentCops >= 0 then
+        if CurrentCops >= Config.MinimumThermitePolice then
             local pos = GetEntityCoords(PlayerPedId())
-            if math.random(1, 100) <= 80 and not IsWearingHandshoes() then
+            if math.random(1, 100) <= 80 and not QBCore.Functions.IsWearingGloves() then
                 TriggerServerEvent("evidence:server:CreateFingerDrop", pos)
             end
             if requiredItemsShowed then
@@ -204,7 +181,7 @@ RegisterNetEvent('thermite:UseThermite', function()
                 })
             end
         else
-            QBCore.Functions.Notify("Not enough police", "error")
+            QBCore.Functions.Notify(Lang:t('error.minimum_police', {value = Config.MinimumThermitePolice}), "error")
         end
     end
 end)
@@ -230,87 +207,6 @@ RegisterNetEvent('qb-ifruitstore:client:SetThermiteStatus', function(stateType, 
         Config.Locations["thermite"].isBusy = state
     elseif stateType == "isDone" then
         Config.Locations["thermite"].isDone = state
-    end
-end)
-
-RegisterNetEvent('qb-ifruitstore:client:PoliceAlertMessage', function(msg, coords, blip)
-    if blip then
-        PlaySound(-1, "Lose_1st", "GTAO_FM_Events_Soundset", 0, 0, 1)
-        TriggerEvent("chatMessage", "911-Report", "error", msg)
-        local transG = 100
-        local blip = AddBlipForRadius(coords.x, coords.y, coords.z, 100.0)
-        SetBlipSprite(blip, 9)
-        SetBlipColour(blip, 1)
-        SetBlipAlpha(blip, transG)
-        SetBlipAsShortRange(blip, false)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString("911 - Suspicious situation in the iFruit Store")
-        EndTextCommandSetBlipName(blip)
-        while transG ~= 0 do
-            Wait(180 * 4)
-            transG = transG - 1
-            SetBlipAlpha(blip, transG)
-            if transG == 0 then
-                SetBlipSprite(blip, 2)
-                RemoveBlip(blip)
-                return
-            end
-        end
-    else
-        if not robberyAlert then
-            PlaySound(-1, "Lose_1st", "GTAO_FM_Events_Soundset", 0, 0, 1)
-            TriggerEvent("chatMessage", "911-Report", "error", msg)
-            robberyAlert = true
-        end
-    end
-end)
-
-RegisterNetEvent('qb-ifruitstore:client:robberyCall', function(streetLabel, coords)
-    if PlayerJob.name == "police" then
-
-        PlaySound(-1, "Lose_1st", "GTAO_FM_Events_Soundset", 0, 0, 1)
-        TriggerEvent('qb-policealerts:client:AddPoliceAlert', {
-            timeOut = 10000,
-            alertTitle = "iFruitStore robbery attempt",
-            coords = {
-                x = coords.x,
-                y = coords.y,
-                z = coords.z,
-            },
-            details = {
-                [1] = {
-                    icon = '<i class="fas fa-university"></i>',
-                    detail = "iFruit Store",
-                },
-                [2] = {
-                    icon = '<i class="fas fa-globe-europe"></i>',
-                    detail = streetLabel,
-                },
-            },
-            callSign = QBCore.Functions.GetPlayerData().metadata["callsign"],
-        })
-
-        local transG = 250
-        local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-        SetBlipSprite(blip, 487)
-        SetBlipColour(blip, 4)
-        SetBlipDisplay(blip, 4)
-        SetBlipAlpha(blip, transG)
-        SetBlipScale(blip, 1.2)
-        SetBlipFlashes(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString("10-90: iFruitStore Robbery")
-        EndTextCommandSetBlipName(blip)
-        while transG ~= 0 do
-            Wait(180 * 4)
-            transG = transG - 1
-            SetBlipAlpha(blip, transG)
-            if transG == 0 then
-                SetBlipSprite(blip, 2)
-                RemoveBlip(blip)
-                return
-            end
-        end
     end
 end)
 
@@ -383,23 +279,23 @@ CreateThread(function()
                             TriggerEvent('inventory:client:requiredItems', requiredItems, true)
                         end
                         if not Config.Locations["takeables"][spot].isBusy and not Config.Locations["takeables"][spot].isDone then
-                            DrawText3Ds(Config.Locations["takeables"][spot].x, Config.Locations["takeables"][spot].y,Config.Locations["takeables"][spot].z, '~g~E~w~ To grab item')
+                            DrawText3Ds(Config.Locations["takeables"][spot].x, Config.Locations["takeables"][spot].y,Config.Locations["takeables"][spot].z, Lang:t('general.grab_item'))
                             if IsControlJustPressed(0, 38) then
-                                if CurrentCops >= 0 then
+                                if CurrentCops >= Config.MinimumiFruitPolice then
                                     if Config.Locations["thermite"].isDone then
                                         QBCore.Functions.TriggerCallback('QBCore:HasItem', function(hasItem)
                                             if hasItem then
                                                 currentSpot = spot
                                                 GrabItem(currentSpot)
                                             else
-                                                QBCore.Functions.Notify("You are missing an advanced lockpick", "error")
+                                                QBCore.Functions.Notify(Lang:t('error.missing_lockpick'), "error")
                                             end
                                         end, "advancedlockpick")
                                     else
-                                        QBCore.Functions.Notify("Security is still active..", "error")
+                                        QBCore.Functions.Notify(Lang:t('error.active_security'), "error")
                                     end
                                 else
-                                    QBCore.Functions.Notify("Not enough Police", "error")
+                                    QBCore.Functions.Notify(Lang:t('error.minimum_police', {value = Config.MinimumiFruitPolice}), "error")
                                 end
                             end
                         end
