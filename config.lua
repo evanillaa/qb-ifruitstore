@@ -1,7 +1,7 @@
 Config = {}
 
-Config.MinimumThermitePolice = 0
-Config.MinimumiFruitPolice = 0
+Config.MinimumThermitePolice = 2
+Config.MinimumiFruitPolice = 2
 
 Config.Locations = {
     ["thermite"] = {
