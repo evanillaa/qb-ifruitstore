@@ -123,7 +123,7 @@ RegisterNUICallback('thermitesuccess', function()
     -- TODO: make server side event to remove item
     TriggerServerEvent("QBCore:Server:RemoveItem", "thermite", 1)
     local pos = GetEntityCoords(PlayerPedId())
-    if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
+    if #(pos - Config.Locations["thermite"].coords) < 1.0 then
         TriggerServerEvent("qb-ifruitstore:server:SetThermiteStatus", "isDone", true)
         TriggerServerEvent("qb-ifruitstore:server:SetThermiteStatus", "isBusy", false)
     end
@@ -163,7 +163,7 @@ end)
 
 RegisterNetEvent('thermite:UseThermite', function()
     local pos = GetEntityCoords(PlayerPedId())
-    if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
+    if #(pos - Config.Locations["thermite"].coords) < 1.0 then
         if CurrentCops >= Config.MinimumThermitePolice then
             local pos = GetEntityCoords(PlayerPedId())
             -- TODO: Replace QBCore.Functions.IsWearingGloves() with a better function
@@ -230,11 +230,11 @@ Citizen.CreateThread(function()
         local inRange = false
         if LocalPlayer.state.isLoggedIn then
             local pos = GetEntityCoords(PlayerPedId())
-            if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 10.0 then
+            if #(pos - Config.Locations["thermite"].coords) < 10.0 then
                 inRange = true
-                if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 3.0 and not Config.Locations["thermite"].isDone then
-                    DrawMarker(2, Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.1, 255, 255, 255, 100, 0, 0, 0, 1, 0, 0, 0)
-                    if #(pos - vector3(Config.Locations["thermite"].x, Config.Locations["thermite"].y,Config.Locations["thermite"].z)) < 1.0 then
+                if #(pos - Config.Locations["thermite"].coords) < 3.0 and not Config.Locations["thermite"].isDone then
+                    DrawMarker(2, Config.Locations["thermite"].coords, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.1, 255, 255, 255, 100, 0, 0, 0, 1, 0, 0, 0)
+                    if #(pos - Config.Locations["thermite"].coords) < 1.0 then
                         if not Config.Locations["thermite"].isDone then
                             if not requiredItemsShowed then
                                 requiredItems = {
@@ -270,7 +270,7 @@ CreateThread(function()
         if LocalPlayer.state.isLoggedIn then
             local pos = GetEntityCoords(PlayerPedId())
             for spot, location in pairs(Config.Locations["takeables"]) do
-                local dist = #(pos - vector3(Config.Locations["takeables"][spot].x, Config.Locations["takeables"][spot].y,Config.Locations["takeables"][spot].z))
+                local dist = #(pos - Config.Locations["takeables"][spot].coords)
                 if dist < 1.0 then
                     inRange = true
                     if dist < 0.6 then
@@ -282,7 +282,7 @@ CreateThread(function()
                             TriggerEvent('inventory:client:requiredItems', requiredItems, true)
                         end
                         if not Config.Locations["takeables"][spot].isBusy and not Config.Locations["takeables"][spot].isDone then
-                            DrawText3Ds(Config.Locations["takeables"][spot].x, Config.Locations["takeables"][spot].y,Config.Locations["takeables"][spot].z, Lang:t('general.grab_item'))
+                            DrawText3Ds(Config.Locations["takeables"][spot].coords.x,Config.Locations["takeables"][spot].coords.y, Config.Locations["takeables"][spot].coords.z, Lang:t('general.grab_item'))
                             if IsControlJustPressed(0, 38) then
                                 if CurrentCops >= Config.MinimumiFruitPolice then
                                     if Config.Locations["thermite"].isDone then
